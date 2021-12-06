@@ -91,7 +91,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Source/API/uart_api.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="Source/ThirdParty/USB_DEVICE/App/usbd_cdc_if.c|Source/ThirdParty/Core/Src/tim.c|Source/API/sms_api.c|Source/ThirdParty/Core/Src/freertos.c|Source/ThirdParty/USB_DEVICE/App/usb_device.c|Source/ThirdParty/Core/Src/gpio.c|Source/ThirdParty/Core/Src/main.c|Source/API/modem_api.c|Source/APP/uart_cli_app.c|Source/Driver/uart_driver.c|Source/API/uart_api.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -183,7 +183,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Source/API/uart_api.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="Source/ThirdParty/USB_DEVICE/App/usbd_cdc_if.c|Source/ThirdParty/Core/Src/tim.c|Source/API/sms_api.c|Source/ThirdParty/Core/Src/freertos.c|Source/ThirdParty/USB_DEVICE/App/usb_device.c|Source/ThirdParty/Core/Src/gpio.c|Source/ThirdParty/Core/Src/main.c|Source/API/modem_api.c|Source/APP/uart_cli_app.c|Source/Driver/uart_driver.c|Source/API/uart_api.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

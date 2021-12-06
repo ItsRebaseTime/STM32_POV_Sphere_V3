@@ -1,5 +1,6 @@
 #ifndef __RING_BUFFER__H__
 #define __RING_BUFFER__H__
+
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
@@ -38,4 +39,5 @@ bool RB_IsEmpty (rb_handle_t cbuf);
 bool RB_IsFull (rb_handle_t cbuf);
 uint32_t RB_GetSize (rb_handle_t cbuf);
 uint32_t RB_GetFreeSpace (rb_handle_t cbuf);
+
 #endif /* __RING_BUFFER__H__ */

@@ -1,21 +1,14 @@
-#ifndef __VCP_API__H__
-#define __VCP_API__H__
-
+#ifndef __CLI_MSG_LUT__H__
+#define __CLI_MSG_LUT__H__
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include "debug_api.h"
-#include "cmsis_os.h"
-#include "uart_driver.h"
-#include "stack_info.h"
-#include "vcp_driver.h"
+
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-// @formatter:off
+#define CLI_DELIMITER ":"
+#define CLI_FILTER_CHARS "\n\r"
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
@@ -23,11 +16,13 @@
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-// @formatter:on
+const static sMsgDesc_t cli_msg_lut[] = {
+    {.msg_name = "BLINK", .param_count = 3, .fun_ptr = &MSG_LedBlink},
+    {.msg_name = "TOGGLE", .param_count = 1, .fun_ptr = &MSG_LedToggle},
+    {.msg_name = "RESET_MODEM", .param_count = 0, .fun_ptr = &MSG_ResetModem},
+    {.msg_name = "SEND_TO_MODEM", .param_count = 1, .fun_ptr = &MSG_SendToModem}
+};
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool VCP_API_Init ();
-void VCP_API_SendString (char *string);
-bool VCP_API_Receive (char *data, uint16_t buffer_size, uint32_t timeout);
-#endif /* __VCP_API__H__ */
+#endif /* __CLI_MSG_LUT__H__ */

@@ -1,11 +1,13 @@
-#ifndef __CMD_HANDLER_LAUNCHER__H__
-#define __CMD_HANDLER_LAUNCHER__H__
+#ifndef __CLI_APP__H__
+#define __CLI_APP__H__
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include "cmd_handlers.h"
-#include "string_utils.h"
-#include "generic_utils.h"
+#include "msg_handler_launcher.h"
+#include "vcp_api.h"
+#include "debug_api.h"
+#include "cli_msg_lut.h"
+#include "usb_driver.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
@@ -13,17 +15,7 @@
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-typedef struct sCmdLauncherArgs_t {
-    char *cmd_raw;
-    char *response_buffer;
-    uint16_t response_buffer_size;
-} sCmdLauncherArgs_t;
 
-typedef struct sCliAppCmdDesc_t {
-    char *cmd_name;
-    uint16_t param_count;
-    void (*fun_ptr)(sCmdHandlerArgs_t);
-} sCliAppCmdDesc_t;
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
@@ -31,5 +23,5 @@ typedef struct sCliAppCmdDesc_t {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool CMD_Handler_Launcher (sCmdLauncherArgs_t *launcher_args);
-#endif /* __CMD_HANDLER_LAUNCHER__H__ */
+void VCP_CLI_APP_Init ();
+#endif /* __CLI_APP__H__ */

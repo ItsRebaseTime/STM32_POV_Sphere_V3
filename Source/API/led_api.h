@@ -4,10 +4,9 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <gpio_api.h>
-#include "cmsis_os.h"
-#include "debug_api.h"
+#include "gpio_api.h"
 #include "stack_info.h"
+#include "debug_api.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
@@ -15,16 +14,11 @@
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-typedef enum eLedEnum_t {
-    eLedApiBoardLed = 0,
-    eLedFirst = eLedApiBoardLed,
-    eLedLast = eLedApiBoardLed,
-} eLedEnum_t;
-
-typedef enum eLedBlinksEnum_t {
-    eLedNoBlinks = 0,
-    eLedInfiniteBlinks = 255,
-} eLedBlinksEnum_t;
+typedef enum eLedApiLedEnum_t {
+    eLedApiLedFirst = 0,
+    eLedApiBlueLed = eLedApiLedFirst,
+    eLedApiLedLast = eLedApiBlueLed
+} eLedApiLedEnum_t;
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
@@ -33,9 +27,8 @@ typedef enum eLedBlinksEnum_t {
  * Prototypes of exported functions
  *********************************************************************************************************************/
 void LED_API_Init (void);
-bool LED_API_BlinkLed (eLedEnum_t led, uint8_t blinks, uint16_t interval);
-bool LED_API_ToggleLed (eLedEnum_t led);
-bool LED_API_ResetLed (eLedEnum_t led);
-bool LED_API_SetLed (eLedEnum_t led);
+bool LED_API_ToggleLed (eLedApiLedEnum_t led);
+bool LED_API_ResetLed (eLedApiLedEnum_t led);
+bool LED_API_SetLed (eLedApiLedEnum_t led);
 
 #endif /* __LED_API__H__ */

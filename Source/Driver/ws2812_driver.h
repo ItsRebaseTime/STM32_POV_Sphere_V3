@@ -43,5 +43,6 @@ typedef struct sRgbColor_t {
  *********************************************************************************************************************/
 void WS2812_Driver_Send(void);
 void WS2812_Driver_Init (uint16_t led_count);
+void WS2812_Driver_GenerateData (sRgbColor_t *frame_data);
 
 #endif /* __WS2812_Driver__H__ */

@@ -4,15 +4,15 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include "cmsis_os.h"
 #include "stdio.h"
 #include "string.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "vcp_api.h"
+#include "uart_api.h"
 #include "vcp_driver.h"
-//#include "uart_api.h"
-//#include "uart_driver.h"
+#include "vcp_api.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
@@ -54,8 +54,8 @@ struct debug_module {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void Debug_API_Init ();
+void Debug_API_Init (void);
 void Debug_API_Log (struct debug_module *module, const char *format, ...);
-bool Debug_API_IsInitialised();
+eUartEnum_t Debug_API_ReturnUart();
 
 #endif /* __DEBUG_API__H__ */

@@ -17,16 +17,16 @@
  *********************************************************************************************************************/
 // @formatter:off
 typedef enum eUartEnum_t {
-    eUartDriverUart5 = 0,
-    eUartDriverUart7,
-    eUartDriverUart8,
-    eUartDriverUart9,
-    eUartDriverUsart1,
+    //eUartDriverUart5 = 0,
+    //eUartDriverUart7,
+    //eUartDriverUart8,
+    //eUartDriverUart9,
+    eUartDriverUsart1 = 0,
     eUartDriverUsart2,
-    eUartDriverUsart3,
-    eUartDriverUsart6,
-    eUartDriverUartFirst = eUartDriverUart5,
-    eUartDriverUartLast = eUartDriverUsart6,
+    //eUartDriverUsart3,
+    //eUartDriverUsart6,
+    eUartDriverUartFirst = eUartDriverUsart1,
+    eUartDriverUartLast = eUartDriverUsart2,
 } eUartEnum_t;
 
 //typedef enum eBaudrateEnum_t {

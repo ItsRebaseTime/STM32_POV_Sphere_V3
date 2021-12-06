@@ -1,15 +1,11 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include "debug_api.h"
+#include "sms_cli_app.h"
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-#define DEBUG_API_MSG_SIZE 1024
-#define DEBUG_MODULE_AMOUNT 5
-#define DEBUG_API_UART eUartDriverUsart1
-#define DEBUG_API_UART_BAUDRATE 921600
-#define DEBUG_API_UART_DELIMITER "\n"
+#define SMS_CLI_APP_RESPONSE_BUFFER_SIZE 160
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
@@ -17,16 +13,18 @@
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-const osMutexAttr_t debug_api_mutex_attr = {
-    "debug_api_mutex",
-    osMutexRecursive | osMutexPrioInherit,
-    NULL,
-    0U
+const static osThreadAttr_t sms_cli_app_task_attributes = {
+    .name = "sms_cli_app_task",
+    .stack_size = SMS_CLI_APP_TASK_STACK_SIZE,
+    .priority = (osPriority_t) SMS_CLI_APP_TASK_PRIORITY
 };
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-osMutexId_t debug_api_mutex_id = NULL;
+static osThreadId_t sms_cli_app_task_handle;
+static char sms_cli_app_received_message[UART_API_MESSAGE_QUEUE_SIZE];
+
+CREATE_DEBUG_MODULE(SMS_CLI_APP)
 /**********************************************************************************************************************
  * Exported variables and references
  *********************************************************************************************************************/
@@ -34,49 +32,39 @@ osMutexId_t debug_api_mutex_id = NULL;
 /**********************************************************************************************************************
  * Prototypes of private functions
  *********************************************************************************************************************/
-
+static void SMS_CLI_APP_Task (void *argument);
 /**********************************************************************************************************************
  * Definitions of private functions
  *********************************************************************************************************************/
+static void SMS_CLI_APP_Task (void *argument) {
+    while (true) {
+        if (SMS_API_ReceiveSMS(sms_cli_app_received_message, UART_API_MESSAGE_QUEUE_SIZE, osWaitForever)) {
+            char *response_buffer = calloc(SMS_CLI_APP_RESPONSE_BUFFER_SIZE, sizeof(char));
+            if (response_buffer == NULL) {
+                debug("Failed to allocate memory in SMS_CLI_APP_Task");
+            }
+            else {
+                sMsgLauncherArgs_t msg_launcher_args = {
+                    .response_buffer_size = SMS_CLI_APP_RESPONSE_BUFFER_SIZE,
+                    .response_buffer = response_buffer,
+                    .msg_raw = sms_cli_app_received_message,
+                    .msg_lut = cli_msg_lut,
+                    .msg_lut_elements = ARRAY_ELEMENT_COUNT(cli_msg_lut),
+                    .delimiter = CLI_DELIMITER,
+                    .filter_chars = CLI_FILTER_CHARS
+                };
+                MSG_HandlerLauncher(&msg_launcher_args);
 
-static void Debug_API_SendString (char *string) {
-    if (string == NULL) {
-        super_debug("[SD]\tNULL POINTER in Debug_API_Send\r\n");
-        return;
+                SMS_API_SendSMS(response_buffer);
+                free(response_buffer);
+            }
+        }
+        osThreadYield();
     }
-    VCP_API_SendString(string);
-}
-
-static void Debug_API_Print (const char *tag, const char *format, va_list args) {
-    char *buffer = calloc(DEBUG_API_MSG_SIZE, sizeof(char));
-    uint16_t offset = 0;
-    offset += snprintf(buffer, DEBUG_API_MSG_SIZE, "[%s]\tDEBUG:\t", tag);
-    if (format) {
-        offset += vsnprintf(&buffer[offset], DEBUG_API_MSG_SIZE - offset, format, args);
-    }
-    Debug_API_SendString(buffer);
-    free(buffer);
 }
 /**********************************************************************************************************************
  * Definitions of exported functions
  *********************************************************************************************************************/
-void Debug_API_Init (void) {
-    //UART_API_Init(DEBUG_API_UART, DEBUG_API_UART_BAUDRATE, DEBUG_API_UART_DELIMITER);
-    debug_api_mutex_id = osMutexNew(&debug_api_mutex_attr);
-    if (debug_api_mutex_id == NULL) {
-        super_debug("[SD]\tMUTEX CREATION FAILURE in Debug_API_Init\r\n");
-    }
-}
-
-void Debug_API_Log (struct debug_module *module, const char *format, ...) {
-    osMutexAcquire(debug_api_mutex_id, osWaitForever);
-    va_list args;
-    va_start(args, format);
-    Debug_API_Print(module->name, format, args);
-    va_end(args);
-    osMutexRelease(debug_api_mutex_id);
-}
-
-eUartEnum_t Debug_API_ReturnUart(void) {
-    return DEBUG_API_UART;
+void SMS_CLI_APP_Init () {
+    sms_cli_app_task_handle = osThreadNew(SMS_CLI_APP_Task, NULL, &sms_cli_app_task_attributes);
 }

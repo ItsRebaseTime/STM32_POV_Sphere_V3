@@ -49,9 +49,7 @@ void remchar (char *string, const char *char_list, uint16_t length) {
 
 int strlcmp (const char *str1, const char *str2) {
     if (strlen(str1) == strlen(str2)) {
-        return strcmp(str1, str2);
+        return strncmp(str1, str2, strlen(str2));
     }
-    else {
-        return -1;
-    }
+    return -1;
 }

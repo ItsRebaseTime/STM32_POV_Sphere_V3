@@ -5,8 +5,9 @@
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-#define UART_API_MESSAGE_QUEUE_SIZE 100
 #define UART_API_MESSAGE_QUEUE_COUNT 3
+
+#define UART_API_FILTER_CHARS "\r\n"
 /**********************************************************************************************************************
  * Private types
  *********************************************************************************************************************/
@@ -28,7 +29,7 @@ typedef struct sUartApiVar_t {
     bool initialised;
     char *buffer;
     uint16_t index;
-    char delimiter;
+    char *delimiter;
 } sUartApiVar_t;
 
 typedef struct sUartApiDesc_t {
@@ -53,7 +54,6 @@ const static osMutexAttr_t uart_api_mutex_attr = {
     NULL,
     0U
 };
-
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
@@ -88,9 +88,8 @@ static void UART_API_Task (void *argument) {
                     if (dynamic_uart_api_lut[uart].buffer != NULL) {
                         dynamic_uart_api_lut[uart].index = 0;
                         dynamic_uart_api_lut[uart].state = eUartApiReceiveState;
-                    }
-                    else {
-                        if (Debug_API_IsInitialised()) {
+                    } else {
+                        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
                             super_debug("[SD] MEMORY ALLOCATION FAILURE in UART_API_Task\r\n");
                         }
                         break;
@@ -100,19 +99,22 @@ static void UART_API_Task (void *argument) {
                 case eUartApiReceiveState: {
                     uint8_t received_byte = 0;
                     while (UART_Driver_ReadByte(dynamic_uart_api_lut[uart].uart, &received_byte) == eUartOK) {
-                        if (dynamic_uart_api_lut[uart].index >= static_uart_api_lut[uart].msg_queue_buffer_size - 1) {
-                            free(dynamic_uart_api_lut[uart].buffer);
-                            dynamic_uart_api_lut[uart].state = eUartApiSetupState;
-                            if (Debug_API_IsInitialised()) {
-                                super_debug("[SD] BUFFER OVERFLOW in UART_API_Task\r\n");
-                            }
+                        if (dynamic_uart_api_lut[uart].uart == eUartDriverUsart2) {
+                            LED_APP_BlinkLed(eLedApiGpsFixLed, 1, 100);
+                        }
+                        if (received_byte == dynamic_uart_api_lut[uart].delimiter[0]) {
+                            dynamic_uart_api_lut[uart].state = eUartApiFlushState;
+                            break;
+                        } else {
+                            dynamic_uart_api_lut[uart].buffer[dynamic_uart_api_lut[uart].index++] = received_byte;
                             break;
                         }
-                        if (received_byte == dynamic_uart_api_lut[uart].delimiter) {
-                            dynamic_uart_api_lut[uart].state = eUartApiFlushState;
-                        }
-                        else {
-                            dynamic_uart_api_lut[uart].buffer[dynamic_uart_api_lut[uart].index++] = received_byte;
+                        if (dynamic_uart_api_lut[uart].index >= static_uart_api_lut[uart].msg_queue_buffer_size) {
+                            free(dynamic_uart_api_lut[uart].buffer);
+                            dynamic_uart_api_lut[uart].state = eUartApiSetupState;
+                            if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
+                                super_debug("[SD] BUFFER OVERFLOW in UART_API_Task\r\n");
+                            }
                             break;
                         }
                     }
@@ -123,11 +125,10 @@ static void UART_API_Task (void *argument) {
 
                 case eUartApiFlushState: {
                     if (osMessageQueuePut(dynamic_uart_api_lut[uart].msg_queue, dynamic_uart_api_lut[uart].buffer, 0U, osWaitForever) == osOK) {
-                        dynamic_uart_api_lut[uart].state = eUartApiSetupState;
                         free(dynamic_uart_api_lut[uart].buffer);
-                    }
-                    else {
-                        if (Debug_API_IsInitialised()) {
+                        dynamic_uart_api_lut[uart].state = eUartApiSetupState;
+                    } else {
+                        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
                             super_debug("[SD] FAILED TO PUT MESSAGE TO QUEUE in UART_API_Task\r\n");
                         }
                     }
@@ -140,9 +141,9 @@ static void UART_API_Task (void *argument) {
 /**********************************************************************************************************************
  * Definitions of exported functions
  *********************************************************************************************************************/
-void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char delimiter) {
+void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char *delimiter) {
     if (uart > eUartDriverUartLast || baudrate == 0) {
-        if (Debug_API_IsInitialised()) {
+        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
             super_debug("[SD] ERROR in UART_API_Init\r\n");
         }
         return;
@@ -154,14 +155,21 @@ void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char delimiter) {
         dynamic_uart_api_lut[uart].delimiter = delimiter;
         dynamic_uart_api_lut[uart].tx_mutex_id = osMutexNew(&uart_api_mutex_attr);
         if (dynamic_uart_api_lut[uart].tx_mutex_id == NULL) {
-            if (Debug_API_IsInitialised()) {
+            if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
                 super_debug("[SD] TX MUTEX CREATION FAILURE in UART_API_Init\r\n");
             }
             return;
         }
+//        dynamic_uart_api_lut[uart].rx_mutex_id = osMutexNew(&uart_api_mutex_attr);
+//        if (dynamic_uart_api_lut[uart].rx_mutex_id == NULL) {
+//            if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
+//                super_debug("[SD] RX MUTEX CREATION FAILURE in UART_API_Init\r\n");
+//            }
+//            return;
+//        }
         dynamic_uart_api_lut[uart].msg_queue = osMessageQueueNew(static_uart_api_lut[uart].msg_queue_count, static_uart_api_lut[uart].msg_queue_buffer_size, NULL);
         if (dynamic_uart_api_lut[uart].msg_queue == NULL) {
-            if (Debug_API_IsInitialised()) {
+            if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
                 super_debug("[SD] MESSAGE QUEUE CREATION FAILURE in UART_API_Init\r\n");
             }
             return;
@@ -170,7 +178,7 @@ void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char delimiter) {
         if (!uart_api_task_started) {
             uart_api_task_handle = osThreadNew(UART_API_Task, NULL, &uart_api_task_attributes);
             if (uart_api_task_handle == NULL) {
-                if (Debug_API_IsInitialised()) {
+                if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
                     super_debug("[SD] THREAD CREATION FAILURE in UART_API_Init\r\n");
                 }
                 return;
@@ -179,7 +187,7 @@ void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char delimiter) {
         }
     }
     else {
-        if (Debug_API_IsInitialised()) {
+        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
             super_debug("[SD] UART INIT FAILURE in UART_API_Init\r\n");
         }
         return;
@@ -187,23 +195,26 @@ void UART_API_Init (eUartEnum_t uart, uint32_t baudrate, char delimiter) {
 }
 
 void UART_API_SendString (eUartEnum_t uart, char *string) {
+    osMutexAcquire(dynamic_uart_api_lut[uart].tx_mutex_id, osWaitForever);
     if (string == NULL || uart > eUartDriverUartLast || !dynamic_uart_api_lut[uart].initialised) {
-        if (Debug_API_IsInitialised()) {
+        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
             super_debug("[SD] ERROR in UART_API_SendString\r\n");
         }
         return;
     }
-    osMutexAcquire(dynamic_uart_api_lut[uart].tx_mutex_id, osWaitForever);
     UART_Driver_SendString(uart, string);
     osMutexRelease(dynamic_uart_api_lut[uart].tx_mutex_id);
 }
 
-bool UART_API_Receive (eUartEnum_t uart, char *data, uint16_t buffer_size, uint32_t timeout) {
-    if (data == NULL || uart > eUartDriverUartLast || buffer_size < static_uart_api_lut[uart].msg_queue_buffer_size || !dynamic_uart_api_lut[uart].initialised) {
-        if (Debug_API_IsInitialised()) {
+bool UART_API_Receive (eUartEnum_t uart, char *data, uint32_t timeout) {
+    if (data == NULL || uart > eUartDriverUartLast || !dynamic_uart_api_lut[uart].initialised) {
+        if (dynamic_uart_api_lut[Debug_API_ReturnUart()].initialised) {
             super_debug("[SD] ERROR in UART_API_Receive\r\n");
         }
         return false;
     }
-    return (osMessageQueueGet(dynamic_uart_api_lut[uart].msg_queue, data, NULL, timeout) == osOK) ? true : false;
+    if (osMessageQueueGet(dynamic_uart_api_lut[uart].msg_queue, data, NULL, timeout) == osOK) {
+        return true;
+    }
+    return false;
 }

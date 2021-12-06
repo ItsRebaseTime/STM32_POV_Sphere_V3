@@ -1,32 +1,36 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include "debug_api.h"
+#include "led_app.h"
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-#define DEBUG_API_MSG_SIZE 1024
-#define DEBUG_MODULE_AMOUNT 5
-#define DEBUG_API_UART eUartDriverUsart1
-#define DEBUG_API_UART_BAUDRATE 921600
-#define DEBUG_API_UART_DELIMITER "\n"
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
-
+typedef struct sLedAppVar_t {
+    uint8_t blinks;
+    uint16_t interval;
+    uint8_t id;
+} sLedApiVar_t;
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-const osMutexAttr_t debug_api_mutex_attr = {
-    "debug_api_mutex",
-    osMutexRecursive | osMutexPrioInherit,
-    NULL,
-    0U
+const osThreadAttr_t led_app_task_attributes = {
+    .name = "led_app_task",
+    .stack_size = LED_APP_TASK_STACK_SIZE,
+    .priority = (osPriority_t) LED_APP_TASK_PRIORITY
 };
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-osMutexId_t debug_api_mutex_id = NULL;
+CREATE_DEBUG_MODULE(LED_APP)
+
+static osThreadId_t led_app_task_handles[eLedAppLedLast + 1];
+
+static sLedApiVar_t dynamic_led_app_lut[] = {
+    [eLedAppBlueLed] = {.blinks = 255, .interval = 1000},
+};
 /**********************************************************************************************************************
  * Exported variables and references
  *********************************************************************************************************************/
@@ -39,44 +43,40 @@ osMutexId_t debug_api_mutex_id = NULL;
  * Definitions of private functions
  *********************************************************************************************************************/
 
-static void Debug_API_SendString (char *string) {
-    if (string == NULL) {
-        super_debug("[SD]\tNULL POINTER in Debug_API_Send\r\n");
-        return;
-    }
-    VCP_API_SendString(string);
-}
-
-static void Debug_API_Print (const char *tag, const char *format, va_list args) {
-    char *buffer = calloc(DEBUG_API_MSG_SIZE, sizeof(char));
-    uint16_t offset = 0;
-    offset += snprintf(buffer, DEBUG_API_MSG_SIZE, "[%s]\tDEBUG:\t", tag);
-    if (format) {
-        offset += vsnprintf(&buffer[offset], DEBUG_API_MSG_SIZE - offset, format, args);
-    }
-    Debug_API_SendString(buffer);
-    free(buffer);
-}
 /**********************************************************************************************************************
  * Definitions of exported functions
  *********************************************************************************************************************/
-void Debug_API_Init (void) {
-    //UART_API_Init(DEBUG_API_UART, DEBUG_API_UART_BAUDRATE, DEBUG_API_UART_DELIMITER);
-    debug_api_mutex_id = osMutexNew(&debug_api_mutex_attr);
-    if (debug_api_mutex_id == NULL) {
-        super_debug("[SD]\tMUTEX CREATION FAILURE in Debug_API_Init\r\n");
+void LED_APP_LedBlinkTask (void *index) {
+    uint8_t led = *(uint8_t*) index;
+    while (true) {
+        if (dynamic_led_app_lut[led].blinks > 0) {
+            LED_API_SetLed(led);
+            osDelay(dynamic_led_app_lut[led].interval / 2);
+            LED_API_ResetLed(led);
+            osDelay(dynamic_led_app_lut[led].interval / 2);
+            if (dynamic_led_app_lut[led].blinks != eLedInfiniteBlinks) {
+                dynamic_led_app_lut[led].blinks--;
+            }
+            debug("BLINK\r\n");
+        }
     }
 }
 
-void Debug_API_Log (struct debug_module *module, const char *format, ...) {
-    osMutexAcquire(debug_api_mutex_id, osWaitForever);
-    va_list args;
-    va_start(args, format);
-    Debug_API_Print(module->name, format, args);
-    va_end(args);
-    osMutexRelease(debug_api_mutex_id);
+void LED_APP_BlinkLed (eLedAppLedEnum_t led, uint8_t blinks, uint16_t interval) {
+    if (led > eLedAppLedLast || blinks == 0 || interval == 0) {
+        return;
+    }
+    dynamic_led_app_lut[led].blinks = blinks;
+    dynamic_led_app_lut[led].interval = interval;
 }
 
-eUartEnum_t Debug_API_ReturnUart(void) {
-    return DEBUG_API_UART;
+void LED_APP_Init (void) {
+    LED_API_Init();
+    for (uint8_t i = 0; i <= eLedAppLedLast; i++) {
+        dynamic_led_app_lut[i].id = i;
+        led_app_task_handles[i] = osThreadNew(LED_APP_LedBlinkTask, (void*) &dynamic_led_app_lut[i].id, &led_app_task_attributes);
+        if (led_app_task_handles[i] == NULL) {
+            debug("THREAD CREATION FAILURE in LED_APP_Init");
+        }
+    }
 }

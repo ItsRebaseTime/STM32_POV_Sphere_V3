@@ -1,33 +1,47 @@
-#ifndef __VCP_API__H__
-#define __VCP_API__H__
-
+#ifndef __MSG_HANDLER_STRUCTS__H__
+#define __MSG_HANDLER_STRUCTS__H__
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include "debug_api.h"
-#include "cmsis_os.h"
-#include "uart_driver.h"
-#include "stack_info.h"
-#include "vcp_driver.h"
+#include "modem_enums.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-// @formatter:off
+#define MSG_MAX_ARGUMENT_COUNT 5
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef struct sMsgHandlerArgs_t {
+    char *msg_args[MSG_MAX_ARGUMENT_COUNT];
+    char *response_buffer;
+    uint16_t response_buffer_size;
+    bool print_response;
+    bool start_task;
+} sMsgHandlerArgs_t;
 
+typedef struct sMsgDesc_t {
+    char *msg_name;
+    uint16_t param_count;
+    void (*fun_ptr)(sMsgHandlerArgs_t*);
+} sMsgDesc_t;
+
+typedef struct sMsgLauncherArgs_t {
+    char *msg_raw;
+    char *response_buffer;
+    uint16_t response_buffer_size;
+    char* filter_chars;
+    char* delimiter;
+    const sMsgDesc_t* msg_lut;
+    uint16_t msg_lut_elements;
+    bool print_response;
+    bool start_task;
+    eModemStateEnum_t *state;
+} sMsgLauncherArgs_t;
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-// @formatter:on
+
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool VCP_API_Init ();
-void VCP_API_SendString (char *string);
-bool VCP_API_Receive (char *data, uint16_t buffer_size, uint32_t timeout);
-#endif /* __VCP_API__H__ */
+#endif /* __MSG_HANDLER_STRUCTS__H__ */

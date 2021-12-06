@@ -1,14 +1,14 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include "cli_app.h"
+#include "uart_cli_app.h"
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-#define CLI_APP_MESSAGE_QUEUE_BUFFER_SIZE 70
-#define CLI_APP_RESPONSE_BUFFER_SIZE 50
+#define UART_CLI_APP_RESPONSE_BUFFER_SIZE 512
 
-CREATE_DEBUG_MODULE(CLI_APP)
+#define UART_CLI_APP_MESSAGE_DELIMITER ":"
+#define UART_CLI_APP_FILTER_CHARS "\r\n"
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
@@ -16,16 +16,18 @@ CREATE_DEBUG_MODULE(CLI_APP)
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-const static osThreadAttr_t cli_app_task_attributes = {
-    .name = "cli_app_task",
-    .stack_size = CLI_APP_TASK_STACK_SIZE,
-    .priority = (osPriority_t) CLI_APP_TASK_PRIORITY
+const static osThreadAttr_t uart_cli_app_task_attributes = {
+    .name = "uart_cli_app_task",
+    .stack_size = UART_CLI_APP_TASK_STACK_SIZE,
+    .priority = (osPriority_t) UART_CLI_APP_TASK_PRIORITY
 };
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-static osThreadId_t cli_app_task_handle;
-static char received_message[CLI_APP_MESSAGE_QUEUE_BUFFER_SIZE];
+static osThreadId_t uart_cli_app_task_handle;
+static char uart_cli_app_received_message[UART_API_MESSAGE_QUEUE_SIZE];
+
+CREATE_DEBUG_MODULE(UART_CLI)
 /**********************************************************************************************************************
  * Exported variables and references
  *********************************************************************************************************************/
@@ -33,26 +35,33 @@ static char received_message[CLI_APP_MESSAGE_QUEUE_BUFFER_SIZE];
 /**********************************************************************************************************************
  * Prototypes of private functions
  *********************************************************************************************************************/
-static void CLI_APP_Task (void *argument);
+static void UART_CLI_APP_Task (void *argument);
 /**********************************************************************************************************************
  * Definitions of private functions
  *********************************************************************************************************************/
-static void CLI_APP_Task (void *argument) {
+static void UART_CLI_APP_Task (void *argument) {
     while (true) {
-        if (VCP_API_Receive(received_message, CLI_APP_MESSAGE_QUEUE_BUFFER_SIZE, osWaitForever)) {
-            char *response_buffer = calloc(CLI_APP_RESPONSE_BUFFER_SIZE, sizeof(char));
+        if (UART_API_Receive(Debug_API_ReturnUart(), uart_cli_app_received_message, osWaitForever)) {
+            char *response_buffer = calloc(UART_CLI_APP_RESPONSE_BUFFER_SIZE, sizeof(char));
             if (response_buffer == NULL) {
-                debug("Failed to allocate memory in CLI_APP_Task");
-            }
-            else {
-                sCmdLauncherArgs_t cmd_launcher_args = {
-                    .response_buffer_size = CLI_APP_RESPONSE_BUFFER_SIZE,
+                debug("Failed to allocate memory in UART_CLI_APP_Task");
+            } else {
+                sMsgLauncherArgs_t msg_launcher_args = {
+                    .response_buffer_size = UART_CLI_APP_RESPONSE_BUFFER_SIZE,
                     .response_buffer = response_buffer,
-                    .cmd_raw = received_message
+                    .msg_raw = uart_cli_app_received_message,
+                    .msg_lut = cli_msg_lut,
+                    .msg_lut_elements = ARRAY_ELEMENT_COUNT(cli_msg_lut),
+                    .delimiter = CLI_DELIMITER,
+                    .filter_chars = CLI_FILTER_CHARS,
+                    .print_response = true,
+                    .start_task = false
                 };
-                CMD_Handler_Launcher(&cmd_launcher_args);
 
-                debug(response_buffer);
+                MSG_HandlerLauncher(&msg_launcher_args);
+
+                debug("%s\r\n", response_buffer);
+
                 free(response_buffer);
             }
         }
@@ -62,10 +71,11 @@ static void CLI_APP_Task (void *argument) {
 /**********************************************************************************************************************
  * Definitions of exported functions
  *********************************************************************************************************************/
-void CLI_APP_Init () {
-    cli_app_task_handle = osThreadNew(CLI_APP_Task, NULL, &cli_app_task_attributes);
-    if (cli_app_task_handle == NULL) {
-        debug("Failed to create thread in CLI_APP_Init");
+void UART_CLI_APP_Init (void) {
+    Debug_API_Init();
+
+    uart_cli_app_task_handle = osThreadNew(UART_CLI_APP_Task, NULL, &uart_cli_app_task_attributes);
+    if (uart_cli_app_task_handle == NULL) {
         return;
     }
 }

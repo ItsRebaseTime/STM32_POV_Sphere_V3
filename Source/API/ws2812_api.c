@@ -14,7 +14,7 @@
  * Private constants
  *********************************************************************************************************************/
 sRgbColor_t picture_data[WS2812_API_PICTURE_WIDTH][WS2812_API_PICTURE_HEIGHT] = {0};
-sRgbColor_t frame_data[WS2812_API_FRAME_HEIGHT][WS2812_API_FRAME_WIDTH] = {0};
+sRgbColor_t frame_data[WS2812_API_FRAME_WIDTH][WS2812_API_FRAME_HEIGHT] = {0};
 
 const osThreadAttr_t ws2812_api_task_attributes = {
     .name = "ws2812_api_task",
@@ -33,6 +33,8 @@ sRgbColor_t black = {
 CREATE_DEBUG_MODULE(WS2812_API)
 
 static osThreadId_t ws2812_api_task_handle;
+
+static uint32_t ws2812_api_frame_position = 0;
 /**********************************************************************************************************************
  * Exported variables and references
  *********************************************************************************************************************/
@@ -50,14 +52,15 @@ void WS2812_API_LedUpdateTask (void *argument);
  *********************************************************************************************************************/
 void WS2812_API_LedUpdateTask (void *argument) {
     while (true) {
-
+        if ((Motor_Driver_GetReferenceTime() + (Motor_Driver_GetInterval() * ws2812_api_frame_position)) <= Timer_Driver_GetCurrentTime()) {
+            WS2812_Driver_Send();
+            ws2812_api_frame_position++;
+            if (ws2812_api_frame_position >= WS2812_API_FRAME_WIDTH) {
+                ws2812_api_frame_position = 0;
+            }
+            WS2812_Driver_GenerateData(frame_data[ws2812_api_frame_position]);
+        }
         osThreadYield();
-    }
-}
-
-void WS2812_API_SetLed (uint16_t led, sRgbColor_t color) {
-    if (led >= WS2812_API_LED_COUNT) {
-        return;
     }
 }
 
@@ -99,20 +102,17 @@ void WS2812_API_ResetFrame (void) {
     WS2812_API_FillFrame(black);
 }
 
-void WS2812_API_Send (void) {
-    WS2812_Driver_Send();
-}
-
 void WS2812_API_Init (void) {
     WS2812_Driver_Init(WS2812_API_LED_COUNT);
+    Timer_Driver_Init_TIM2();
     Motor_Driver_Init(MOTOR_DRIVER_DEFAULT_SPEED);
     Motor_Driver_Start();
 
     WS2812_API_ResetFrame();
-    WS2812_API_Send();
+    WS2812_Driver_Send();
 
     ws2812_api_task_handle = osThreadNew(WS2812_API_LedUpdateTask, NULL, &ws2812_api_task_attributes);
     if (ws2812_api_task_handle == NULL) {
-        debug("THREAD CREATION FAILURE in WS2812_API_Init\r\n");
+        debug("Failed to create thread in WS2812_API_Init\r\n");
     }
 }

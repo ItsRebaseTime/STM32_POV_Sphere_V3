@@ -8,6 +8,7 @@
 #include "stack_info.h"
 #include "ws2812_driver.h"
 #include "motor_driver.h"
+#include "timer_driver.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
@@ -27,11 +28,9 @@
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void WS2812_API_SetLed (uint16_t led, sRgbColor_t color);
 void WS2812_API_SetPixel (uint16_t x, uint16_t y, sRgbColor_t color);
 void WS2812_API_FillFrame (sRgbColor_t color);
 void WS2812_API_ResetFrame (void);
 void WS2812_API_Init (void);
-void WS2812_API_Send (void);
 
 #endif /* __WS2812_API__H__ */

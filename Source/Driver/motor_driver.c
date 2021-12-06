@@ -21,6 +21,12 @@
 CREATE_DEBUG_MODULE(MOTOR_DRIVER)
 
 uint8_t motor_driver_motor_speed = MOTOR_DRIVER_MAX_SPEED_VALUE;
+
+uint32_t motor_driver_now = 0;
+uint32_t motor_driver_new_time = 0;
+uint32_t motor_driver_old_time = 0;
+uint32_t motor_driver_interval = 1;
+uint32_t motor_driver_rotations = 0;
 /**********************************************************************************************************************
  * Exported variables and references
  *********************************************************************************************************************/
@@ -40,7 +46,6 @@ void Motor_Driver_Init (uint8_t motor_speed) {
     if (motor_speed > MOTOR_DRIVER_MAX_SPEED_VALUE) {
         return;
     }
-    Timer_Driver_Init_TIM3();
     TIM3->CCR1 = MOTOR_DRIVER_MAX_SPEED_VALUE;
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 }
@@ -62,4 +67,22 @@ void Motor_Driver_Start () {
 void Motor_Driver_Stop () {
     TIM3->CCR1 = MOTOR_DRIVER_MAX_SPEED_VALUE;
     debug("Motor stopped\r\n");
+}
+
+uint32_t Motor_Driver_GetReferenceTime () {
+    return motor_driver_new_time;
+}
+
+uint32_t Motor_Driver_GetInterval () {
+
+}
+
+void Motor_Driver_Interrupt () {
+    motor_driver_rotations++;
+    if (motor_driver_rotations >= 5) {
+        motor_driver_rotations -= 5;
+        motor_driver_old_time = motor_driver_new_time;
+        motor_driver_new_time = Timer_Driver_GetCurrentTime();
+        motor_driver_interval = motor_driver_new_time - motor_driver_old_time;
+    }
 }

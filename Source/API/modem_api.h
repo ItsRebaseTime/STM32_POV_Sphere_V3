@@ -1,21 +1,23 @@
-#ifndef __VCP_API__H__
-#define __VCP_API__H__
+#ifndef __MODEM_API__H__
+#define __MODEM_API__H__
 
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "stdbool.h"
+#include "uart_api.h"
+#include "gpio_api.h"
 #include "debug_api.h"
-#include "cmsis_os.h"
-#include "uart_driver.h"
-#include "stack_info.h"
-#include "vcp_driver.h"
+#include "string_utils.h"
+#include "generic_utils.h"
+#include "msg_handler_launcher.h"
+#include "modem_msg_handlers.h"
+#include "cli_msg_handlers.h"
+#include "modem_enums.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-// @formatter:off
+
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
@@ -23,11 +25,14 @@
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-// @formatter:on
+
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool VCP_API_Init ();
-void VCP_API_SendString (char *string);
-bool VCP_API_Receive (char *data, uint16_t buffer_size, uint32_t timeout);
-#endif /* __VCP_API__H__ */
+void Modem_API_Init     (void);
+void Modem_API_Reset    (void);
+bool Modem_API_Send     (char *string);
+bool Modem_API_Lock     (void);
+void Modem_API_Unlock   (void);
+
+#endif /* __MODEM_API__H__ */

@@ -20,7 +20,6 @@
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void Timer_Driver_Init_TIM1 ();
-void Timer_Driver_Init_TIM2 ();
-void Timer_Driver_Init_TIM3 ();
+void Timer_Driver_Init ();
+uint32_t Timer_Driver_GetCurrentTime();
 #endif /* __TIMER_DRIVER__H__ */

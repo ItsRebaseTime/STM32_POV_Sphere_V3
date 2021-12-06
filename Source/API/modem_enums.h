@@ -1,33 +1,40 @@
-#ifndef __VCP_API__H__
-#define __VCP_API__H__
+#ifndef __MODEM_ENUMS__H__
+#define __MODEM_ENUMS__H__
 
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include "debug_api.h"
-#include "cmsis_os.h"
-#include "uart_driver.h"
-#include "stack_info.h"
-#include "vcp_driver.h"
+
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-// @formatter:off
+
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef enum eModemStateEnum_t {
+    eModemStateFirst = 0,
+    eModemStateSetup = eModemStateFirst,
+    eModemStateIdle,
+    eModemStateGetSms,
+    eModemStateSendSms,
+    eModemStateLast = eModemStateSendSms
+} eModemStateEnum_t;
 
+enum eModemMessageEnum {
+    eModemMsgFirst = 0,
+    eModemMsgEIND = eModemMsgFirst,
+    eModemMsgEUSIM,
+    eModemMsgOK,
+    eModemMsgCOPS,
+    eModemMsgIPR,
+    eModemMsgLast = eModemMsgIPR
+};
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-// @formatter:on
+
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool VCP_API_Init ();
-void VCP_API_SendString (char *string);
-bool VCP_API_Receive (char *data, uint16_t buffer_size, uint32_t timeout);
-#endif /* __VCP_API__H__ */
+#endif /* __MODEM_ENUMS_H__ */

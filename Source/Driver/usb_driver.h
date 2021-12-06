@@ -1,21 +1,20 @@
-#ifndef __VCP_API__H__
-#define __VCP_API__H__
-
+#ifndef __USB_DRIVER__H__
+#define __USB_DRIVER__H__
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include "debug_api.h"
-#include "cmsis_os.h"
-#include "uart_driver.h"
-#include "stack_info.h"
-#include "vcp_driver.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
+#include "usbd_def.h"
+#include "usb_device.h"
+#include "usbd_core.h"
+#include "usbd_desc.h"
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-// @formatter:off
+
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
@@ -23,11 +22,10 @@
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-// @formatter:on
+extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool VCP_API_Init ();
-void VCP_API_SendString (char *string);
-bool VCP_API_Receive (char *data, uint16_t buffer_size, uint32_t timeout);
-#endif /* __VCP_API__H__ */
+void USB_Driver_Init (void);
+uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+#endif /* __USB_DRIVER__H__ */
